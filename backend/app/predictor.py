@@ -6,11 +6,6 @@ import sys
 from PIL import Image
 from .config import settings
 
-# Path to the cached YOLOv5 repository
-YOLOV5_REPO_PATH = "/Users/apple/.cache/torch/hub/ultralytics_yolov5_master"
-if YOLOV5_REPO_PATH not in sys.path:
-    sys.path.append(YOLOV5_REPO_PATH)
-
 class YoloPredictor:
     def __init__(self):
         self.model = None
@@ -21,7 +16,7 @@ class YoloPredictor:
                 raise FileNotFoundError(f"Model file not found at {settings.MODEL_PATH}")
             
             print(f"Loading YOLOv5 model from {settings.MODEL_PATH}...")
-            # Load the custom model using PyTorch Hub
+            # Load the custom model using PyTorch Hub (this will download/verify the repo first)
             self.model = torch.hub.load(
                 'ultralytics/yolov5',
                 'custom',
@@ -29,6 +24,17 @@ class YoloPredictor:
                 force_reload=False
             )
             print("Model loaded successfully!")
+            
+            # Dynamically locate the downloaded YOLOv5 repository in the torch hub cache directory
+            hub_dir = torch.hub.get_dir()
+            if os.path.exists(hub_dir):
+                for d in os.listdir(hub_dir):
+                    if d.startswith("ultralytics_yolov5"):
+                        yolov5_dir = os.path.join(hub_dir, d)
+                        if yolov5_dir not in sys.path:
+                            sys.path.append(yolov5_dir)
+                            print(f"Dynamically registered YOLOv5 repository in sys.path: {yolov5_dir}")
+                        break
 
     def predict(self, image_path: str):
         if self.model is None:
