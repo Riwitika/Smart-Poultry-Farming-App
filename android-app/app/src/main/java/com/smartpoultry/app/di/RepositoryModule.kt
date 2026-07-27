@@ -1,6 +1,7 @@
 package com.smartpoultry.app.di
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.smartpoultry.app.data.repository.FirestoreRepositoryImpl
 import com.smartpoultry.app.data.repository.PredictionRepositoryImpl
 import com.smartpoultry.app.domain.repository.FirestoreRepository
@@ -33,6 +34,12 @@ abstract class RepositoryModule {
         @Singleton
         fun provideFirebaseFirestore(): FirebaseFirestore {
             return FirebaseFirestore.getInstance()
+        }
+
+        @Provides
+        @Singleton
+        fun provideFirebaseStorage(): FirebaseStorage {
+            return FirebaseStorage.getInstance()
         }
     }
 }

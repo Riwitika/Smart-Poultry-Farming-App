@@ -61,18 +61,23 @@ class PredictionViewModel @Inject constructor(
                     // Auto-save prediction to Firestore
                     val uid = FirebaseAuth.getInstance().currentUser?.uid
                     if (uid != null) {
-                        val record = PredictionRecord(
-                            predictionId = UUID.randomUUID().toString(),
-                            uid = uid,
-                            imageUrl = uri.toString(),
-                            diseaseName = prediction.disease,
-                            confidence = prediction.confidence,
-                            processingTime = prediction.processingTimeMs,
-                            modelName = "YOLOv5 Segmentation",
-                            predictionStatus = "Success",
-                            createdAt = System.currentTimeMillis()
-                        )
-                        savePredictionToFirestoreWithRetry(record, prediction)
+                        viewModelScope.launch {
+                            val storageUrl = firestoreRepository.uploadPredictionImage(uri, uid)
+                                .getOrElse { uri.toString() }
+                            
+                            val record = PredictionRecord(
+                                predictionId = UUID.randomUUID().toString(),
+                                uid = uid,
+                                imageUrl = storageUrl,
+                                diseaseName = prediction.disease,
+                                confidence = prediction.confidence,
+                                processingTime = prediction.processingTimeMs,
+                                modelName = "YOLOv5 Segmentation",
+                                predictionStatus = "Success",
+                                createdAt = System.currentTimeMillis()
+                            )
+                            savePredictionToFirestoreWithRetry(record, prediction)
+                        }
                     } else {
                         _uiState.value = PredictionUiState.Success(prediction)
                     }

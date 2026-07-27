@@ -1,6 +1,8 @@
 package com.smartpoultry.app.data.repository
 
+import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.smartpoultry.app.domain.model.PredictionRecord
 import com.smartpoultry.app.domain.model.UserProfile
 import com.smartpoultry.app.domain.repository.FirestoreRepository
@@ -13,7 +15,8 @@ import javax.inject.Singleton
 
 @Singleton
 class FirestoreRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage
 ) : FirestoreRepository {
 
     override fun getUserProfile(uid: String): Flow<UserProfile?> = callbackFlow {
@@ -150,6 +153,17 @@ class FirestoreRepositoryImpl @Inject constructor(
             if (snapshot.exists()) {
                 val uid = snapshot.getString("uid").orEmpty()
                 val diseaseName = snapshot.getString("diseaseName").orEmpty()
+                val imageUrl = snapshot.getString("imageUrl").orEmpty()
+
+                // Gracefully delete the image from Firebase Storage if it's stored there
+                if (imageUrl.startsWith("https://firebasestorage.googleapis.com")) {
+                    try {
+                        val imageRef = storage.getReferenceFromUrl(imageUrl)
+                        imageRef.delete().await()
+                    } catch (e: Exception) {
+                        e.printStackTrace() // Log error but proceed with Firestore deletion
+                    }
+                }
                 
                 firestore.runTransaction { transaction ->
                     // 1. ALL READS FIRST
@@ -183,6 +197,22 @@ class FirestoreRepositoryImpl @Inject constructor(
                 }.await()
             }
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadPredictionImage(uri: Uri, uid: String): Result<String> {
+        return try {
+            val filename = "${System.currentTimeMillis()}_${java.util.UUID.randomUUID()}.jpg"
+            val fileRef = storage.reference.child("predictions/$uid/$filename")
+            
+            // Upload to storage
+            fileRef.putFile(uri).await()
+            
+            // Get public download url
+            val downloadUrl = fileRef.downloadUrl.await()
+            Result.success(downloadUrl.toString())
         } catch (e: Exception) {
             Result.failure(e)
         }
