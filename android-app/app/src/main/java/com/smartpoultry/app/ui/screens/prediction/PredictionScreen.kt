@@ -124,6 +124,15 @@ fun PredictionScreen(
         }
     )
 
+    val firestoreError by viewModel.firestoreError.collectAsState()
+
+    LaunchedEffect(firestoreError) {
+        firestoreError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearFirestoreError()
+        }
+    }
+
     LaunchedEffect(uiState) {
         when (val state = uiState) {
             is PredictionUiState.Error -> {

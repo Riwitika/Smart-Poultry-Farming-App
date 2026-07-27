@@ -5,7 +5,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartpoultry.app.domain.model.Prediction
+import com.smartpoultry.app.domain.model.PredictionRecord
 import com.smartpoultry.app.domain.repository.PredictionRepository
+import com.smartpoultry.app.domain.repository.FirestoreRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +23,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.util.UUID
 import javax.inject.Inject
 
 sealed interface PredictionUiState {
@@ -32,11 +36,15 @@ sealed interface PredictionUiState {
 @HiltViewModel
 class PredictionViewModel @Inject constructor(
     private val repository: PredictionRepository,
+    private val firestoreRepository: FirestoreRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<PredictionUiState>(PredictionUiState.Idle)
     val uiState: StateFlow<PredictionUiState> = _uiState.asStateFlow()
+
+    private val _firestoreError = MutableStateFlow<String?>(null)
+    val firestoreError: StateFlow<String?> = _firestoreError.asStateFlow()
 
     fun uploadImage(uri: Uri) {
         _uiState.value = PredictionUiState.Loading
@@ -50,7 +58,24 @@ class PredictionViewModel @Inject constructor(
 
             repository.getPrediction(part)
                 .onSuccess { prediction ->
-                    _uiState.value = PredictionUiState.Success(prediction)
+                    // Auto-save prediction to Firestore
+                    val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    if (uid != null) {
+                        val record = PredictionRecord(
+                            predictionId = UUID.randomUUID().toString(),
+                            uid = uid,
+                            imageUrl = uri.toString(),
+                            diseaseName = prediction.disease,
+                            confidence = prediction.confidence,
+                            processingTime = prediction.processingTimeMs,
+                            modelName = "YOLOv5 Segmentation",
+                            predictionStatus = "Success",
+                            createdAt = System.currentTimeMillis()
+                        )
+                        savePredictionToFirestoreWithRetry(record, prediction)
+                    } else {
+                        _uiState.value = PredictionUiState.Success(prediction)
+                    }
                 }
                 .onFailure { exception ->
                     val errorMsg = when (exception) {
@@ -64,8 +89,35 @@ class PredictionViewModel @Inject constructor(
         }
     }
 
+    private fun savePredictionToFirestoreWithRetry(
+        record: PredictionRecord,
+        prediction: Prediction,
+        retryCount: Int = 1
+    ) {
+        viewModelScope.launch {
+            firestoreRepository.savePrediction(record)
+                .onSuccess {
+                    _uiState.value = PredictionUiState.Success(prediction)
+                }
+                .onFailure { exception ->
+                    if (retryCount > 0) {
+                        // Retry automatically once
+                        savePredictionToFirestoreWithRetry(record, prediction, retryCount - 1)
+                    } else {
+                        // Show results, but trigger error snackbar for sync issues
+                        _uiState.value = PredictionUiState.Success(prediction)
+                        _firestoreError.value = "Failed to sync prediction with cloud: ${exception.message}"
+                    }
+                }
+        }
+    }
+
     fun resetState() {
         _uiState.value = PredictionUiState.Idle
+    }
+
+    fun clearFirestoreError() {
+        _firestoreError.value = null
     }
 
     private fun uriToMultipart(uri: Uri): MultipartBody.Part? {

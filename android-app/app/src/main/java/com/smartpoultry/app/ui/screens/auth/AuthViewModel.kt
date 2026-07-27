@@ -4,7 +4,9 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartpoultry.app.domain.model.User
+import com.smartpoultry.app.domain.model.UserProfile
 import com.smartpoultry.app.domain.repository.AuthRepository
+import com.smartpoultry.app.domain.repository.FirestoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ sealed interface AuthUiState {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val firestoreRepository: FirestoreRepository
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -75,9 +78,21 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthUiState.Loading
             authRepository.register(email.trim(), password, displayName.trim())
                 .onSuccess { user ->
-                    _currentUser.value = user
-                    _authState.value = AuthUiState.Success("Account registered successfully")
-                    onSuccess()
+                    val profile = UserProfile(
+                        uid = user.userId,
+                        fullName = displayName.trim(),
+                        email = user.email,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    firestoreRepository.createUserProfile(profile)
+                        .onSuccess {
+                            _currentUser.value = user
+                            _authState.value = AuthUiState.Success("Account registered successfully")
+                            onSuccess()
+                        }
+                        .onFailure { exception ->
+                            _authState.value = AuthUiState.Error("Profile creation failed: ${exception.message}")
+                        }
                 }
                 .onFailure { exception ->
                     _authState.value = AuthUiState.Error(mapFirebaseError(exception))
