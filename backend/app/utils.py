@@ -1,4 +1,4 @@
-from backend.app.config import settings
+from .config import settings
 
 def is_allowed_file(filename: str) -> bool:
     if "." not in filename:

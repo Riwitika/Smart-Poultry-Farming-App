@@ -3,10 +3,10 @@ import shutil
 import uuid
 from fastapi import FastAPI, UploadFile, File, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.config import settings
-from backend.app.schemas import StatusResponse, HealthResponse, PredictionResponse
-from backend.app.predictor import predictor
-from backend.app.utils import is_allowed_file
+from .config import settings
+from .schemas import StatusResponse, HealthResponse, PredictionResponse
+from .predictor import predictor
+from .utils import is_allowed_file
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

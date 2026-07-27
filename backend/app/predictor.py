@@ -4,7 +4,7 @@ import time
 import os
 import sys
 from PIL import Image
-from backend.app.config import settings
+from .config import settings
 
 # Path to the cached YOLOv5 repository
 YOLOV5_REPO_PATH = "/Users/apple/.cache/torch/hub/ultralytics_yolov5_master"
