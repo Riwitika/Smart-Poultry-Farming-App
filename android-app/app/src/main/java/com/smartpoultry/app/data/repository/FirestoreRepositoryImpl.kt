@@ -93,7 +93,25 @@ class FirestoreRepositoryImpl @Inject constructor(
     override suspend fun savePrediction(predictionRecord: PredictionRecord): Result<Unit> {
         return try {
             firestore.runTransaction { transaction ->
-                // 1. Save prediction
+                // 1. ALL READS FIRST
+                val userRef = firestore.collection("users").document(predictionRecord.uid)
+                val userSnap = transaction.get(userRef)
+
+                // 2. COMPUTE VALUES SECOND
+                var currentTotal = 0L
+                var currentHealthy = 0L
+                var currentDiseased = 0L
+                if (userSnap.exists()) {
+                    currentTotal = userSnap.getLong("totalPredictions") ?: 0L
+                    currentHealthy = userSnap.getLong("healthyPredictions") ?: 0L
+                    currentDiseased = userSnap.getLong("diseasePredictions") ?: 0L
+                }
+
+                val isHealthy = predictionRecord.diseaseName.lowercase().contains("healthy")
+                val newHealthy = if (isHealthy) currentHealthy + 1 else currentHealthy
+                val newDiseased = if (!isHealthy) currentDiseased + 1 else currentDiseased
+
+                // 3. ALL WRITES LAST
                 val predRef = firestore.collection("predictions").document(predictionRecord.predictionId)
                 val predMap = hashMapOf(
                     "predictionId" to predictionRecord.predictionId,
@@ -108,18 +126,7 @@ class FirestoreRepositoryImpl @Inject constructor(
                 )
                 transaction.set(predRef, predMap)
 
-                // 2. Update user stats
-                val userRef = firestore.collection("users").document(predictionRecord.uid)
-                val userSnap = transaction.get(userRef)
                 if (userSnap.exists()) {
-                    val currentTotal = userSnap.getLong("totalPredictions") ?: 0L
-                    val currentHealthy = userSnap.getLong("healthyPredictions") ?: 0L
-                    val currentDiseased = userSnap.getLong("diseasePredictions") ?: 0L
-
-                    val isHealthy = predictionRecord.diseaseName.lowercase().contains("healthy")
-                    val newHealthy = if (isHealthy) currentHealthy + 1 else currentHealthy
-                    val newDiseased = if (!isHealthy) currentDiseased + 1 else currentDiseased
-
                     transaction.update(userRef, mapOf(
                         "totalPredictions" to currentTotal + 1,
                         "healthyPredictions" to newHealthy,
@@ -143,21 +150,28 @@ class FirestoreRepositoryImpl @Inject constructor(
                 val diseaseName = snapshot.getString("diseaseName").orEmpty()
                 
                 firestore.runTransaction { transaction ->
-                    // 1. Delete prediction
-                    transaction.delete(predRef)
-                    
-                    // 2. Decrement user stats
+                    // 1. ALL READS FIRST
                     val userRef = firestore.collection("users").document(uid)
                     val userSnap = transaction.get(userRef)
+
+                    // 2. COMPUTE VALUES SECOND
+                    var currentTotal = 0L
+                    var currentHealthy = 0L
+                    var currentDiseased = 0L
                     if (userSnap.exists()) {
-                        val currentTotal = userSnap.getLong("totalPredictions") ?: 0L
-                        val currentHealthy = userSnap.getLong("healthyPredictions") ?: 0L
-                        val currentDiseased = userSnap.getLong("diseasePredictions") ?: 0L
+                        currentTotal = userSnap.getLong("totalPredictions") ?: 0L
+                        currentHealthy = userSnap.getLong("healthyPredictions") ?: 0L
+                        currentDiseased = userSnap.getLong("diseasePredictions") ?: 0L
+                    }
 
-                        val isHealthy = diseaseName.lowercase().contains("healthy")
-                        val newHealthy = if (isHealthy) maxOf(0L, currentHealthy - 1) else currentHealthy
-                        val newDiseased = if (!isHealthy) maxOf(0L, currentDiseased - 1) else currentDiseased
+                    val isHealthy = diseaseName.lowercase().contains("healthy")
+                    val newHealthy = if (isHealthy) maxOf(0L, currentHealthy - 1) else currentHealthy
+                    val newDiseased = if (!isHealthy) maxOf(0L, currentDiseased - 1) else currentDiseased
 
+                    // 3. ALL WRITES LAST
+                    transaction.delete(predRef)
+                    
+                    if (userSnap.exists()) {
                         transaction.update(userRef, mapOf(
                             "totalPredictions" to maxOf(0L, currentTotal - 1),
                             "healthyPredictions" to newHealthy,
