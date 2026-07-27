@@ -39,14 +39,15 @@ import com.smartpoultry.app.ui.components.InputField
 import com.smartpoultry.app.ui.components.PrimaryButton
 
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     onNavigateToDashboard: () -> Unit,
-    onNavigateToRegister: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit,
+    onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
+    val nameState = remember { mutableStateOf("") }
     val emailState = remember { mutableStateOf("") }
     val passwordState = remember { mutableStateOf("") }
+    val confirmPasswordState = remember { mutableStateOf("") }
 
     val authState = viewModel.authState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -75,7 +76,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Logo Placeholder
+            // Logo Icon
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -94,14 +95,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Welcome Back",
+                text = "Create Account",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = "Sign in to monitor your flock's health",
+                text = "Register to start monitoring poultry health",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
@@ -110,6 +111,14 @@ fun LoginScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            InputField(
+                value = nameState.value,
+                onValueChange = { nameState.value = it },
+                label = "Full Name"
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             InputField(
                 value = emailState.value,
@@ -127,43 +136,40 @@ fun LoginScreen(
                 isPassword = true
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Forgot Password Text
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Text(
-                    text = "Forgot Password?",
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable { onNavigateToForgotPassword() }
-                )
-            }
+            InputField(
+                value = confirmPasswordState.value,
+                onValueChange = { confirmPasswordState.value = it },
+                label = "Confirm Password",
+                isPassword = true
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Login Button (Navigates to Dashboard)
             PrimaryButton(
-                text = "Login",
+                text = "Create Account",
                 onClick = {
-                    viewModel.login(emailState.value, passwordState.value, onNavigateToDashboard)
+                    viewModel.register(
+                        email = emailState.value,
+                        password = passwordState.value,
+                        passwordConfirm = confirmPasswordState.value,
+                        displayName = nameState.value,
+                        onSuccess = onNavigateToDashboard
+                    )
                 },
                 isLoading = authState.value is AuthUiState.Loading
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Register Text
             Text(
-                text = "Don't have an account? Sign Up",
+                text = "Already have an account? Login",
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier
-                    .clickable { onNavigateToRegister() }
+                    .clickable { onNavigateToLogin() }
                     .padding(8.dp)
             )
         }

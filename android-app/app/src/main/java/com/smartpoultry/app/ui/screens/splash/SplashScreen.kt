@@ -27,11 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.smartpoultry.app.ui.screens.auth.AuthViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val alpha = remember { Animatable(0f) }
 
@@ -41,7 +45,12 @@ fun SplashScreen(
             animationSpec = tween(durationMillis = 1000)
         )
         delay(1000) // Delay to reach 2 seconds total
-        onNavigateToLogin()
+        
+        if (viewModel.currentUser.value != null) {
+            onNavigateToDashboard()
+        } else {
+            onNavigateToLogin()
+        }
     }
 
     Box(

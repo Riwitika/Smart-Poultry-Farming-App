@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "189692537405",
+    "project_id": "smart-poultry-farming-b0d5b",
+    "storage_bucket": "smart-poultry-farming-b0d5b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:189692537405:android:cff46796758dc6f5625854",
+        "android_client_info": {
+          "package_name": "com.smartpoultry.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxDh08pw4y2e145w_7w-PPHD-PirhfbGg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
