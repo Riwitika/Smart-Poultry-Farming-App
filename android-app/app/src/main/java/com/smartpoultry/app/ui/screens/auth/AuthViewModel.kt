@@ -42,6 +42,29 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.getCurrentUser().collectLatest { user ->
                 _currentUser.value = user
+                if (user != null) {
+                    ensureUserProfileExists(user)
+                }
+            }
+        }
+    }
+
+    private fun ensureUserProfileExists(user: User) {
+        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val docRef = db.collection("users").document(user.userId)
+        docRef.get().addOnSuccessListener { document ->
+            if (!document.exists()) {
+                val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                val joinedTime = firebaseUser?.metadata?.creationTimestamp ?: System.currentTimeMillis()
+                val profile = UserProfile(
+                    uid = user.userId,
+                    fullName = user.displayName.ifBlank { firebaseUser?.displayName ?: "Farmer" },
+                    email = user.email,
+                    createdAt = joinedTime
+                )
+                viewModelScope.launch {
+                    firestoreRepository.createUserProfile(profile)
+                }
             }
         }
     }
@@ -53,6 +76,7 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthUiState.Loading
             authRepository.login(email.trim(), password)
                 .onSuccess { user ->
+                    ensureUserProfileExists(user)
                     _currentUser.value = user
                     _authState.value = AuthUiState.Success("Logged in successfully")
                     onSuccess()

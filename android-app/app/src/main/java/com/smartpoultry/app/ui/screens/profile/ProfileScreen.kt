@@ -19,7 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.List
@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.smartpoultry.app.ui.components.ScreenContainer
 import com.smartpoultry.app.ui.screens.auth.AuthViewModel
 import java.text.SimpleDateFormat
@@ -58,6 +59,7 @@ fun ProfileScreen(
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
+    val firebaseUser = FirebaseAuth.getInstance().currentUser
 
     ScreenContainer(
         title = "Farmer Profile",
@@ -74,29 +76,42 @@ fun ProfileScreen(
             }
         } else {
             val profile = uiState.userProfile
-            val initials = if (!profile?.fullName.isNullOrBlank()) {
-                profile!!.fullName.trim().split(" ")
-                    .mapNotNull { it.firstOrNull()?.toString() }
-                    .take(2)
-                    .joinToString("")
-                    .uppercase()
-            } else {
-                "PF"
-            }
+            
+            // Resolve display name and email fallback
+            val resolvedName = profile?.fullName?.ifBlank { null }
+                ?: firebaseUser?.displayName?.ifBlank { null }
+                ?: "Farmer"
+            val resolvedEmail = profile?.email?.ifBlank { null }
+                ?: firebaseUser?.email?.ifBlank { null }
+                ?: "farmer@poultry.com"
+
+            val initials = resolvedName.trim().split(" ")
+                .mapNotNull { it.firstOrNull()?.toString() }
+                .take(2)
+                .joinToString("")
+                .uppercase()
 
             val joinedDateText = if (profile != null) {
                 val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
                 sdf.format(Date(profile.createdAt))
+            } else if (firebaseUser != null) {
+                val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+                sdf.format(Date(firebaseUser.metadata?.creationTimestamp ?: System.currentTimeMillis()))
             } else {
                 "Unknown Date"
             }
 
-            val lastScanText = if (profile?.lastPrediction != null) {
+            val lastScanText = if (uiState.predictions.isNotEmpty()) {
                 val sdf = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
-                sdf.format(Date(profile.lastPrediction))
+                sdf.format(Date(uiState.predictions.first().createdAt))
             } else {
                 "No scans completed yet"
             }
+
+            // Calculate stats dynamically from prediction records
+            val totalScans = uiState.predictions.size
+            val healthyScans = uiState.predictions.count { it.diseaseName.lowercase().contains("healthy") }
+            val diseaseScans = totalScans - healthyScans
 
             Column(
                 modifier = Modifier
@@ -154,12 +169,12 @@ fun ProfileScreen(
                         ProfileInfoRow(
                             icon = Icons.Default.Person,
                             label = "Farmer Name",
-                            value = profile?.fullName ?: "Poultry Farmer"
+                            value = resolvedName
                         )
                         ProfileInfoRow(
                             icon = Icons.Default.Email,
                             label = "Email Address",
-                            value = profile?.email ?: "farmer@poultry.com"
+                            value = resolvedEmail
                         )
                         ProfileInfoRow(
                             icon = Icons.Default.CheckCircle,
@@ -193,19 +208,19 @@ fun ProfileScreen(
                             icon = Icons.Default.List,
                             iconColor = MaterialTheme.colorScheme.primary,
                             label = "Total Scans Saved",
-                            value = (profile?.totalPredictions ?: 0).toString()
+                            value = totalScans.toString()
                         )
                         ProfileStatRow(
                             icon = Icons.Default.CheckCircle,
                             iconColor = Color(0xFF10B981),
                             label = "Healthy Fecal Samples",
-                            value = (profile?.healthyPredictions ?: 0).toString()
+                            value = healthyScans.toString()
                         )
                         ProfileStatRow(
                             icon = Icons.Default.Warning,
                             iconColor = Color(0xFFEF4444),
                             label = "Diseased Fecal Samples",
-                            value = (profile?.diseasePredictions ?: 0).toString()
+                            value = diseaseScans.toString()
                         )
                         ProfileStatRow(
                             icon = Icons.Default.Person,
@@ -235,7 +250,7 @@ fun ProfileScreen(
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ExitToApp,
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                         contentDescription = "Logout",
                         modifier = Modifier.size(20.dp)
                     )

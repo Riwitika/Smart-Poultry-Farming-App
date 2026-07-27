@@ -20,7 +20,8 @@ class FirestoreRepositoryImpl @Inject constructor(
         val docRef = firestore.collection("users").document(uid)
         val subscription = docRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                error.printStackTrace()
+                trySend(null)
                 return@addSnapshotListener
             }
             if (snapshot != null && snapshot.exists()) {
@@ -48,7 +49,8 @@ class FirestoreRepositoryImpl @Inject constructor(
         
         val subscription = colRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                error.printStackTrace()
+                trySend(emptyList())
                 return@addSnapshotListener
             }
             if (snapshot != null) {

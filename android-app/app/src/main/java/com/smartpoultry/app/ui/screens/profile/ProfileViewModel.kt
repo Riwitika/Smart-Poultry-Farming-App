@@ -2,6 +2,7 @@ package com.smartpoultry.app.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartpoultry.app.domain.model.PredictionRecord
 import com.smartpoultry.app.domain.model.UserProfile
 import com.smartpoultry.app.domain.repository.FirestoreRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -15,6 +16,7 @@ import javax.inject.Inject
 
 data class ProfileUiState(
     val userProfile: UserProfile? = null,
+    val predictions: List<PredictionRecord> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null
 )
@@ -42,11 +44,24 @@ class ProfileViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            firestoreRepository.getUserProfile(uid).collectLatest { profile ->
-                _uiState.value = _uiState.value.copy(
-                    userProfile = profile,
-                    isLoading = false
-                )
+            // Stream profile details
+            launch {
+                firestoreRepository.getUserProfile(uid).collectLatest { profile ->
+                    _uiState.value = _uiState.value.copy(
+                        userProfile = profile,
+                        isLoading = false
+                    )
+                }
+            }
+
+            // Stream predictions list for stats alignment
+            launch {
+                firestoreRepository.getPredictions(uid).collectLatest { list ->
+                    _uiState.value = _uiState.value.copy(
+                        predictions = list,
+                        isLoading = false
+                    )
+                }
             }
         }
     }
