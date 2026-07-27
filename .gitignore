@@ -8,3 +8,6 @@ __pycache__/
 backend/uploads/
 backend/outputs/
 dataset/
+venv/
+backend/venv/
+
