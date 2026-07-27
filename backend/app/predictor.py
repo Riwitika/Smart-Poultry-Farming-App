@@ -21,7 +21,8 @@ class YoloPredictor:
                 'ultralytics/yolov5',
                 'custom',
                 path=settings.MODEL_PATH,
-                force_reload=False
+                force_reload=False,
+                trust_repo=True
             )
             print("Model loaded successfully!")
             
