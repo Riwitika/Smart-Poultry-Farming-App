@@ -10,6 +10,10 @@ class YoloPredictor:
         self.session = None
         self.input_name = None
 
+    @property
+    def model(self):
+        return self.session
+
     def load_model(self):
         if self.session is None:
             # Load ONNX model instead of PyTorch model
