@@ -3,6 +3,7 @@ package com.smartpoultry.app.data.repository
 import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.smartpoultry.app.domain.model.AppResult
 import com.smartpoultry.app.domain.model.PredictionRecord
 import com.smartpoultry.app.domain.model.UserProfile
 import com.smartpoultry.app.domain.repository.FirestoreRepository
@@ -76,7 +77,7 @@ class FirestoreRepositoryImpl @Inject constructor(
         awaitClose { subscription.remove() }
     }
 
-    override suspend fun createUserProfile(userProfile: UserProfile): Result<Unit> {
+    override suspend fun createUserProfile(userProfile: UserProfile): AppResult<Unit> {
         return try {
             val map = hashMapOf(
                 "uid" to userProfile.uid,
@@ -89,13 +90,13 @@ class FirestoreRepositoryImpl @Inject constructor(
                 "lastPrediction" to userProfile.lastPrediction
             )
             firestore.collection("users").document(userProfile.uid).set(map).await()
-            Result.success(Unit)
+            AppResult.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            AppResult.Failure(e)
         }
     }
 
-    override suspend fun savePrediction(predictionRecord: PredictionRecord): Result<Unit> {
+    override suspend fun savePrediction(predictionRecord: PredictionRecord): AppResult<Unit> {
         return try {
             firestore.runTransaction { transaction ->
                 // 1. ALL READS FIRST
@@ -140,13 +141,13 @@ class FirestoreRepositoryImpl @Inject constructor(
                     ))
                 }
             }.await()
-            Result.success(Unit)
+            AppResult.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            AppResult.Failure(e)
         }
     }
 
-    override suspend fun deletePrediction(predictionId: String): Result<Unit> {
+    override suspend fun deletePrediction(predictionId: String): AppResult<Unit> {
         return try {
             val predRef = firestore.collection("predictions").document(predictionId)
             val snapshot = predRef.get().await()
@@ -196,13 +197,13 @@ class FirestoreRepositoryImpl @Inject constructor(
                     }
                 }.await()
             }
-            Result.success(Unit)
+            AppResult.Success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            AppResult.Failure(e)
         }
     }
 
-    override suspend fun uploadPredictionImage(uri: Uri, uid: String): Result<String> {
+    override suspend fun uploadPredictionImage(uri: Uri, uid: String): AppResult<String> {
         return try {
             val filename = "${System.currentTimeMillis()}_${java.util.UUID.randomUUID()}.jpg"
             val fileRef = storage.reference.child("predictions/$uid/$filename")
@@ -212,9 +213,9 @@ class FirestoreRepositoryImpl @Inject constructor(
             
             // Get public download url
             val downloadUrl = fileRef.downloadUrl.await()
-            Result.success(downloadUrl.toString())
+            AppResult.Success(downloadUrl.toString())
         } catch (e: Exception) {
-            Result.failure(e)
+            AppResult.Failure(e)
         }
     }
 }

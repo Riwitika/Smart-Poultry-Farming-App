@@ -1,6 +1,7 @@
 package com.smartpoultry.app.data.repository
 
 import com.smartpoultry.app.data.remote.ApiService
+import com.smartpoultry.app.domain.model.AppResult
 import com.smartpoultry.app.domain.model.Prediction
 import com.smartpoultry.app.domain.repository.PredictionRepository
 import okhttp3.MultipartBody
@@ -11,10 +12,10 @@ import javax.inject.Singleton
 class PredictionRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : PredictionRepository {
-    override suspend fun getPrediction(file: MultipartBody.Part): Result<Prediction> {
+    override suspend fun getPrediction(file: MultipartBody.Part): AppResult<Prediction> {
         return try {
             val response = apiService.predict(file)
-            Result.success(
+            AppResult.Success(
                 Prediction(
                     success = response.success,
                     disease = response.prediction,
@@ -24,7 +25,7 @@ class PredictionRepositoryImpl @Inject constructor(
                 )
             )
         } catch (e: Exception) {
-            Result.failure(e)
+            AppResult.Failure(e)
         }
     }
 }
