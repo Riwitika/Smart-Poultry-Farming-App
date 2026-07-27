@@ -45,7 +45,6 @@ class FirestoreRepositoryImpl @Inject constructor(
     override fun getPredictions(uid: String): Flow<List<PredictionRecord>> = callbackFlow {
         val colRef = firestore.collection("predictions")
             .whereEqualTo("uid", uid)
-            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
         
         val subscription = colRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
@@ -65,7 +64,7 @@ class FirestoreRepositoryImpl @Inject constructor(
                         predictionStatus = doc.getString("predictionStatus").orEmpty(),
                         createdAt = doc.getLong("createdAt") ?: 0L
                     )
-                }
+                }.sortedByDescending { it.createdAt }
                 trySend(list)
             }
         }
