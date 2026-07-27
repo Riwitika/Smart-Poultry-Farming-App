@@ -54,10 +54,10 @@ class PredictionViewModel @Inject constructor(
                 }
                 .onFailure { exception ->
                     val errorMsg = when (exception) {
-                        is UnknownHostException -> "No internet connection. Please check your network."
-                        is SocketTimeoutException -> "Connection timed out. Server might be busy."
-                        is IOException -> "Network error occurred. Please try again."
-                        else -> exception.localizedMessage ?: "An unexpected error occurred"
+                        is UnknownHostException -> "No internet connection: ${exception.message}"
+                        is SocketTimeoutException -> "Connection timeout: ${exception.message}"
+                        is IOException -> "Network IO error: ${exception.message}"
+                        else -> "${exception.javaClass.simpleName}: ${exception.message ?: "An unexpected error occurred"}"
                     }
                     _uiState.value = PredictionUiState.Error(errorMsg)
                 }
