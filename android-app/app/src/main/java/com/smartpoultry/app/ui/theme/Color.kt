@@ -2,19 +2,15 @@ package com.smartpoultry.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val EmeraldGreen = Color(0xFF10B981)
-val DeepGreen = Color(0xFF047857)
-val OffWhite = Color(0xFFF9FAFB)
-val PureWhite = Color(0xFFFFFFFF)
-
-// Dark Theme Colors
+// Premium Dark Theme Palette (Behance / Dribbble inspired)
+val DarkBackground = Color(0xFF0F172A)
+val DarkSurface = Color(0xFF1E293B)
 val DarkPrimary = Color(0xFF34D399)
-val DarkSecondary = Color(0xFF059669)
-val DarkBackground = Color(0xFF111827)
-val DarkSurface = Color(0xFF1F2937)
+val ColorHealthy = Color(0xFF22C55E)
+val ColorDisease = Color(0xFFEF4444)
+val ColorWarning = Color(0xFFFBBF24)
+val ColorAccent = Color(0xFF60A5FA)
 
-// Common Colors
-val TextPrimaryLight = Color(0xFF111827)
-val TextSecondaryLight = Color(0xFF4B5563)
+// Text Colors
 val TextPrimaryDark = Color(0xFFF9FAFB)
-val TextSecondaryDark = Color(0xFFD1D5DB)
+val TextSecondaryDark = Color(0xFF94A3B8)

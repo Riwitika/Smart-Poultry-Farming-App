@@ -19,6 +19,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,7 +80,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.smartpoultry.app.ui.components.FloatingBottomNavigation
+import com.smartpoultry.app.ui.components.MicroscopeIllustration
 import com.smartpoultry.app.ui.components.PrimaryButton
 import com.smartpoultry.app.ui.components.ScreenContainer
 import kotlinx.coroutines.launch
@@ -87,6 +91,7 @@ import java.io.File
 
 @Composable
 fun PredictionScreen(
+    navController: NavController,
     onNavigateBack: () -> Unit,
     viewModel: PredictionViewModel = hiltViewModel()
 ) {
@@ -100,7 +105,6 @@ fun PredictionScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val imageCapture = remember { ImageCapture.Builder().build() }
 
-    // Handlers for image selection
     val pickMediaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
@@ -148,64 +152,68 @@ fun PredictionScreen(
             onImageCaptured = { uri ->
                 selectedImageUri = uri
                 isCameraMode = false
-                viewModel.uploadImage(uri) // Upload immediately after capture
+                viewModel.uploadImage(uri)
             },
             onClose = { isCameraMode = false }
         )
     } else {
-        ScreenContainer(
-            title = "AI Diagnostics",
-            onBackClick = onNavigateBack
-        ) { paddingValues ->
-            Box(
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                MaterialTheme.colorScheme.background
+                    .background(Color(0xFF0F172A))
+                    .padding(bottom = 88.dp) // Space for bottom bar
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header (Futuristic look)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF60A5FA).copy(alpha = 0.12f),
+                                    Color(0xFF1E293B).copy(alpha = 0.5f)
+                                )
                             )
                         )
-                    )
-                    .padding(paddingValues)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(top = 44.dp, start = 20.dp, end = 20.dp, bottom = 24.dp)
                 ) {
-                    // Header text
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 20.dp)
-                    ) {
+                    Column {
                         Text(
-                            text = "Fecal Health Diagnostics",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = "AI Diagnostics Lab",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
                         )
                         Text(
-                            text = "Run instant YOLOv5-powered checks on flock droppings",
+                            text = "Futuristic YOLOv5 Fecal Diagnostics scan",
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            color = Color(0xFF94A3B8),
+                            fontWeight = FontWeight.Medium
                         )
                     }
+                }
 
-                    // Image Preview Card (Premium elevated container with gradient highlight)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    // Upload Card with vector illustration
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(290.dp)
+                            .height(280.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.surface)
+                            .background(Color(0xFF1E293B))
                             .border(
-                                width = 1.5.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                width = 1.dp,
+                                color = Color.White.copy(alpha = 0.08f),
                                 shape = RoundedCornerShape(24.dp)
                             ),
                         contentAlignment = Alignment.Center
@@ -221,45 +229,28 @@ fun PredictionScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(20.dp)
                             ) {
-                                // Pulsing badge design using circles
-                                Box(
-                                    modifier = Modifier
-                                        .size(72.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = "Placeholder",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(36.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
+                                MicroscopeIllustration(modifier = Modifier.size(96.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "Ready for Diagnostics",
-                                    fontSize = 18.sp,
+                                    text = "Ready to Scan",
+                                    fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color.White
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Position camera over a fresh fecal dropping or upload a clear photo from the gallery.",
+                                    text = "Position camera or select fecal dropping image",
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    lineHeight = 16.sp
+                                    color = Color(0xFF94A3B8)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Buttons Row (Camera and Gallery with beautiful styling)
+                    // Action buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -281,19 +272,15 @@ fun PredictionScreen(
                                 .height(54.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
+                                contentColor = Color(0xFF34D399)
                             ),
                             border = ButtonDefaults.outlinedButtonBorder.copy(
                                 width = 1.5.dp
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(imageVector = Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Camera", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                            Text("Camera", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
 
                         OutlinedButton(
@@ -307,37 +294,53 @@ fun PredictionScreen(
                                 .height(54.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
+                                contentColor = Color(0xFF34D399)
                             ),
                             border = ButtonDefaults.outlinedButtonBorder.copy(
                                 width = 1.5.dp
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Gallery", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                            Text("Gallery", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Analyze sample button (Gradient primary look)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                if (selectedImageUri != null && uiState !is PredictionUiState.Loading) {
+                                    Brush.linearGradient(
+                                        colors = listOf(Color(0xFF34D399), Color(0xFF059669))
+                                    )
+                                } else {
+                                    Brush.linearGradient(
+                                        colors = listOf(Color(0xFF1E293B), Color(0xFF1E293B))
+                                    )
+                                }
+                            )
+                            .clickable(enabled = selectedImageUri != null && uiState !is PredictionUiState.Loading) {
+                                selectedImageUri?.let { viewModel.uploadImage(it) }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (uiState is PredictionUiState.Loading) {
+                            CircularProgressIndicator(color = Color(0xFF0F172A), modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                text = "Analyze Sample",
+                                color = if (selectedImageUri != null) Color(0xFF0F172A) else Color(0xFF64748B),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
 
-                    // Predict Button (Premium gradient look inside Custom Composable)
-                    PrimaryButton(
-                        text = "Analyze Sample",
-                        onClick = {
-                            selectedImageUri?.let { viewModel.uploadImage(it) }
-                        },
-                        enabled = selectedImageUri != null && uiState !is PredictionUiState.Loading,
-                        isLoading = uiState is PredictionUiState.Loading
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    // Animate card entry using AnimatedVisibility
+                    // Reveal Prediction Result Card
                     AnimatedVisibility(
                         visible = uiState is PredictionUiState.Success,
                         enter = fadeIn(animationSpec = tween(500)) + slideInVertically(
@@ -347,155 +350,35 @@ fun PredictionScreen(
                     ) {
                         if (uiState is PredictionUiState.Success) {
                             val prediction = (uiState as PredictionUiState.Success).prediction
-                            PredictionResultCard(prediction = prediction)
-                        }
-                    }
-
-                    // Loading overlay detail
-                    if (uiState is PredictionUiState.Loading) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 3.dp,
-                                    modifier = Modifier.size(44.dp)
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = "Uploading to FastAPI server...",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "YOLOv5 segmentation inference running...",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                                )
-                            }
+                            PremiumResultCard(prediction = prediction)
                         }
                     }
                 }
-
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp)
-                )
             }
-        }
-    }
-}
 
-@Composable
-fun CameraPreviewLayout(
-    imageCapture: ImageCapture,
-    onImageCaptured: (Uri) -> Unit,
-    onClose: () -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { ctx ->
-                PreviewView(ctx).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                }
-            },
-            modifier = Modifier.fillMaxSize(),
-            update = { previewView ->
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().apply {
-                        setSurfaceProvider(previewView.surfaceProvider)
-                    }
-                    
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                    
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageCapture
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }, ContextCompat.getMainExecutor(context))
-            }
-        )
-        
-        // Close Button (Top-Left)
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 40.dp, start = 20.dp)
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Close Camera",
-                tint = Color.White
+            // Overlay floating bottom bar
+            FloatingBottomNavigation(
+                navController = navController,
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
-        }
-        
-        // Capture Action Button (Bottom Center)
-        FloatingActionButton(
-            onClick = {
-                val file = File(context.cacheDir, "temp_capture_${System.currentTimeMillis()}.jpg")
-                val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
-                imageCapture.takePicture(
-                    outputOptions,
-                    ContextCompat.getMainExecutor(context),
-                    object : ImageCapture.OnImageSavedCallback {
-                        override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                            val uri = Uri.fromFile(file)
-                            onImageCaptured(uri)
-                        }
-                        override fun onError(exception: ImageCaptureException) {
-                            exception.printStackTrace()
-                        }
-                    }
-                )
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 40.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Capture Photo",
-                modifier = Modifier.size(28.dp)
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 88.dp)
             )
         }
     }
 }
 
 @Composable
-fun PredictionResultCard(
+fun PremiumResultCard(
     prediction: com.smartpoultry.app.domain.model.Prediction
 ) {
     val isHealthy = prediction.disease.lowercase().contains("healthy")
-    val accentColor = if (isHealthy) {
-        Color(0xFF10B981) // Emerald Green
-    } else {
-        Color(0xFFEF4444) // Soft Red / Crimson
-    }
+    val accentColor = if (isHealthy) Color(0xFF22C55E) else Color(0xFFEF4444)
     
-    // Smoothly animate the confidence progress bar
     val animatedProgress by animateFloatAsState(
         targetValue = (prediction.confidence / 100f).toFloat(),
         animationSpec = tween(durationMillis = 1200)
@@ -506,18 +389,14 @@ fun PredictionResultCard(
             .fillMaxWidth()
             .border(
                 width = 1.dp,
-                color = accentColor.copy(alpha = 0.25f),
+                color = accentColor.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(24.dp)
             ),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(24.dp)
-        ) {
+        Column(modifier = Modifier.padding(20.dp)) {
             // Header Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -534,38 +413,36 @@ fun PredictionResultCard(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = "AI Diagnostics Result",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // AI Diagnosis / Disease Row
             Text(
                 text = "DIAGNOSIS CLASS",
-                fontSize = 11.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                color = Color(0xFF94A3B8)
             )
             Text(
                 text = prediction.disease,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
-                color = accentColor,
-                modifier = Modifier.padding(vertical = 2.dp)
+                color = accentColor
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Confidence Progress section
+            // Confidence progress bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -576,19 +453,19 @@ fun PredictionResultCard(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Model Confidence",
-                        fontSize = 13.sp,
+                        text = "Confidence",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF94A3B8)
                     )
                 }
                 Text(
                     text = "${prediction.confidence}%",
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     color = accentColor
                 )
@@ -598,43 +475,39 @@ fun PredictionResultCard(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
                 color = accentColor,
                 trackColor = accentColor.copy(alpha = 0.12f)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Divider line
+            // Divider
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                    .background(Color.White.copy(alpha = 0.05f))
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Additional details with beautiful alignment
+            // Fields list
             ResultFieldRow(
                 icon = Icons.Default.Refresh,
-                iconColor = MaterialTheme.colorScheme.primary,
+                iconColor = Color(0xFF60A5FA),
                 label = "Inference Speed",
                 value = "${prediction.processingTimeMs} ms"
             )
-            
             Spacer(modifier = Modifier.height(10.dp))
-            
             ResultFieldRow(
                 icon = Icons.Default.Settings,
-                iconColor = MaterialTheme.colorScheme.primary,
-                label = "Core Algorithm",
+                iconColor = Color(0xFF60A5FA),
+                label = "Model",
                 value = "YOLOv5 Segmentation"
             )
-            
             Spacer(modifier = Modifier.height(10.dp))
-            
             ResultFieldRow(
                 icon = Icons.Default.Check,
                 iconColor = accentColor,
@@ -642,21 +515,33 @@ fun PredictionResultCard(
                 value = if (prediction.success) "Success" else "Failed"
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Message text container
-            Box(
+            // AI Recommendation Box (Futuristic Treatment Plan)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(12.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF0F172A))
+                    .padding(16.dp)
             ) {
                 Text(
-                    text = prediction.message,
+                    text = "AI TREATMENT RECOMMENDATION",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF60A5FA)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                val recommendation = if (isHealthy) {
+                    "Maintain current biosecurity protocols. Keep flock litter dry and ensure clean ventilation to sustain current flock status."
+                } else {
+                    "Quarantine affected birds immediately. Consult veterinarian to introduce specific antibiotics or electrolyte therapy. Clean feed trays with sanitizers."
+                }
+                Text(
+                    text = recommendation,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    color = Color(0xFF94A3B8),
                     lineHeight = 16.sp
                 )
             }
@@ -666,7 +551,7 @@ fun PredictionResultCard(
 
 @Composable
 fun ResultFieldRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconColor: Color,
     label: String,
     value: String
@@ -677,26 +562,108 @@ fun ResultFieldRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            icon?.let {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = label,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(16.dp)
             )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = label, fontSize = 13.sp, color = Color(0xFF94A3B8))
         }
-        Text(
-            text = value,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+        Text(text = value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+    }
+}
+
+@Composable
+fun CameraPreviewLayout(
+    imageCapture: ImageCapture,
+    onImageCaptured: (Uri) -> Unit,
+    onClose: () -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).also {
+                    previewView = it
+                }
+            },
+            modifier = Modifier.fillMaxSize()
         )
+
+        LaunchedEffect(previewView) {
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView?.surfaceProvider)
+            }
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+            } catch (exc: Exception) {
+                exc.printStackTrace()
+            }
+        }
+
+        // Camera control buttons
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 48.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Close
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(imageVector = Icons.Default.Close, contentDescription = "Close Camera", tint = Color.White)
+            }
+
+            // Capture
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable {
+                        val photoFile = File(
+                            context.cacheDir,
+                            "scan_${System.currentTimeMillis()}.jpg"
+                        )
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+                        imageCapture.takePicture(
+                            outputOptions,
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                                    val savedUri = Uri.fromFile(photoFile)
+                                    onImageCaptured(savedUri)
+                                }
+                                override fun onError(exception: ImageCaptureException) {
+                                    exception.printStackTrace()
+                                }
+                            }
+                        )
+                    }
+            )
+
+            // Placeholder to align capture button in center
+            Spacer(modifier = Modifier.size(54.dp))
+        }
     }
 }

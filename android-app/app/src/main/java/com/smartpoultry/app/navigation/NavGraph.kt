@@ -76,6 +76,7 @@ fun NavGraph(
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
+                navController = navController,
                 onNavigateToPrediction = { navController.navigate(Screen.Prediction.route) },
                 onNavigateToHistory = { navController.navigate(Screen.History.route) },
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
@@ -85,18 +86,21 @@ fun NavGraph(
 
         composable(Screen.Prediction.route) {
             PredictionScreen(
+                navController = navController,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.History.route) {
             HistoryScreen(
+                navController = navController,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.Profile.route) {
             ProfileScreen(
+                navController = navController,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToLogin = {
                     navController.navigate(Screen.Login.route) {
