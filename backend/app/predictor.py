@@ -1,77 +1,65 @@
-import torch
-import torch.hub
 import time
 import os
-import sys
+import numpy as np
 from PIL import Image
+import onnxruntime as ort
 from .config import settings
 
 class YoloPredictor:
     def __init__(self):
-        self.model = None
+        self.session = None
+        self.input_name = None
 
     def load_model(self):
-        if self.model is None:
-            if not os.path.exists(settings.MODEL_PATH):
-                raise FileNotFoundError(f"Model file not found at {settings.MODEL_PATH}")
+        if self.session is None:
+            # Load ONNX model instead of PyTorch model
+            onnx_path = settings.MODEL_PATH.replace(".pt", ".onnx")
+            if not os.path.exists(onnx_path):
+                raise FileNotFoundError(f"ONNX model file not found at {onnx_path}")
             
-            print(f"Loading YOLOv5 model from {settings.MODEL_PATH}...")
-            # Load the custom model using PyTorch Hub (this will download/verify the repo first)
-            self.model = torch.hub.load(
-                'ultralytics/yolov5',
-                'custom',
-                path=settings.MODEL_PATH,
-                force_reload=False,
-                trust_repo=True
-            )
-            print("Model loaded successfully!")
-            
-            # Dynamically locate the downloaded YOLOv5 repository in the torch hub cache directory
-            hub_dir = torch.hub.get_dir()
-            if os.path.exists(hub_dir):
-                for d in os.listdir(hub_dir):
-                    if d.startswith("ultralytics_yolov5"):
-                        yolov5_dir = os.path.join(hub_dir, d)
-                        if yolov5_dir not in sys.path:
-                            sys.path.append(yolov5_dir)
-                            print(f"Dynamically registered YOLOv5 repository in sys.path: {yolov5_dir}")
-                        break
+            print(f"Loading YOLOv5 ONNX model from {onnx_path}...")
+            # Load ONNX session (CPU only, using lightweight CPU execution provider)
+            self.session = ort.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
+            self.input_name = self.session.get_inputs()[0].name
+            print("ONNX model loaded successfully!")
 
     def predict(self, image_path: str):
-        if self.model is None:
+        if self.session is None:
             self.load_model()
         
         start_time = time.time()
         
         # Load and resize image to 640x640 as expected by YOLOv5
         img = Image.open(image_path).convert("RGB")
+        img_resized = img.resize((640, 640), Image.Resampling.BILINEAR)
         
-        # Convert PIL image to Torch tensor normalized to [0, 1] range
-        import torchvision.transforms as T
-        transform = T.Compose([
-            T.Resize((640, 640)),
-            T.ToTensor()
-        ])
-        tensor = transform(img).unsqueeze(0) # Shape: [1, 3, 640, 640]
+        # Convert PIL image to numpy array, normalize to [0, 1] range, and transpose to [1, 3, 640, 640]
+        img_np = np.array(img_resized, dtype=np.float32) / 255.0
+        img_np = np.transpose(img_np, (2, 0, 1)) # shape: [3, 640, 640]
+        tensor = np.expand_dims(img_np, axis=0) # shape: [1, 3, 640, 640]
         
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        tensor = tensor.to(device)
-        self.model.to(device)
-        self.model.eval()
+        # Run inference using ONNX Runtime
+        outputs = self.session.run(None, {self.input_name: tensor})
+        # outputs[0] has shape [1, 25200, 41] (custom segment model has 41 output elements)
+        output = outputs[0][0] # shape [25200, 41]
         
-        # Run raw forward pass
-        with torch.no_grad():
-            outputs = self.model(tensor)
-            
-        # Get raw predictions tensor (first element of output tuple/list)
-        if isinstance(outputs, (list, tuple)):
-            raw_pred = outputs[0]
-        else:
-            raw_pred = outputs
-            
-        # Run Non-Maximum Suppression (NMS) to filter boxes
-        from utils.general import non_max_suppression
-        detections = non_max_suppression(raw_pred, conf_thres=0.25, iou_thres=0.45)[0]
+        # Filter detections (confidence threshold 0.25)
+        conf_thres = 0.25
+        obj_conf = output[:, 4]
+        class_scores = output[:, 5:]
+        class_ids = np.argmax(class_scores, axis=1)
+        class_confs = class_scores[np.arange(len(class_scores)), class_ids]
+        
+        scores = obj_conf * class_confs
+        mask = scores > conf_thres
+        
+        filtered_output = output[mask]
+        filtered_scores = scores[mask]
+        filtered_class_ids = class_ids[mask]
+        filtered_boxes = filtered_output[:, :4] # [x_center, y_center, width, height]
+        
+        # Run Non-Maximum Suppression (NMS) in NumPy
+        keep = self.numpy_nms(filtered_boxes, filtered_scores, iou_threshold=0.45)
         
         # Extract class mapping
         class_mapping = {
@@ -81,17 +69,14 @@ class YoloPredictor:
             "ncd": "Newcastle Disease"
         }
         
-        if detections is not None and len(detections) > 0:
-            # Sort detections by confidence (index 4) descending
-            det_list = detections.tolist()
-            det_list.sort(key=lambda x: x[4], reverse=True)
-            top_det = det_list[0]
+        names_list = ["healthy", "cocci", "salmo", "ncd"]
+        
+        if len(keep) > 0:
+            top_idx = keep[0]
+            class_idx = filtered_class_ids[top_idx]
+            confidence = round(float(filtered_scores[top_idx]) * 100.0, 2)
             
-            class_idx = int(top_det[5])
-            confidence = round(float(top_det[4]) * 100.0, 2)
-            
-            # Get class name from model names dictionary
-            raw_class = self.model.names.get(class_idx, "healthy")
+            raw_class = names_list[class_idx] if class_idx < len(names_list) else "healthy"
         else:
             raw_class = "healthy"
             confidence = 100.0
@@ -100,5 +85,37 @@ class YoloPredictor:
         processing_time_ms = int((time.time() - start_time) * 1000)
         
         return prediction, confidence, processing_time_ms
+
+    def numpy_nms(self, boxes, scores, iou_threshold=0.45):
+        if len(boxes) == 0:
+            return []
+        
+        x1 = boxes[:, 0] - boxes[:, 2] / 2
+        y1 = boxes[:, 1] - boxes[:, 3] / 2
+        x2 = boxes[:, 0] + boxes[:, 2] / 2
+        y2 = boxes[:, 1] + boxes[:, 3] / 2
+        
+        areas = (x2 - x1) * (y2 - y1)
+        order = scores.argsort()[::-1]
+        
+        keep = []
+        while order.size > 0:
+            i = order[0]
+            keep.append(i)
+            
+            xx1 = np.maximum(x1[i], x1[order[1:]])
+            yy1 = np.maximum(y1[i], y1[order[1:]])
+            xx2 = np.minimum(x2[i], x2[order[1:]])
+            yy2 = np.minimum(y2[i], y2[order[1:]])
+            
+            w = np.maximum(0.0, xx2 - xx1)
+            h = np.maximum(0.0, yy2 - yy1)
+            inter = w * h
+            
+            ovr = inter / (areas[i] + areas[order[1:]] - inter)
+            inds = np.where(ovr <= iou_threshold)[0]
+            order = order[inds + 1]
+            
+        return keep
 
 predictor = YoloPredictor()
