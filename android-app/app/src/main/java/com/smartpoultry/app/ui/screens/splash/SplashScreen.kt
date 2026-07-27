@@ -10,11 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,12 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.smartpoultry.app.ui.components.MascotIllustration
 import com.smartpoultry.app.ui.screens.auth.AuthViewModel
 import kotlinx.coroutines.delay
 
@@ -56,7 +52,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color(0xFF0F172A)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -64,29 +60,16 @@ fun SplashScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.alpha(alpha.value)
         ) {
-            // App Logo Placeholder (Premium shape and icon representation)
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite, // Representing health/care
-                    contentDescription = "Logo",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(56.dp)
-                )
-            }
+            // Friendly flat Mascot Chicken
+            MascotIllustration(modifier = Modifier.size(140.dp))
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "Smart Poultry Farming",
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
                 textAlign = TextAlign.Center
             )
 
@@ -96,7 +79,7 @@ fun SplashScreen(
                 text = "AI-powered Poultry Health Monitoring",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                color = Color(0xFF94A3B8),
                 textAlign = TextAlign.Center
             )
         }

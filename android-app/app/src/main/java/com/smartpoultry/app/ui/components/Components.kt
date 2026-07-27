@@ -1,5 +1,8 @@
 package com.smartpoultry.app.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,6 +35,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -45,29 +53,39 @@ fun PrimaryButton(
     enabled: Boolean = true,
     isLoading: Boolean = false
 ) {
-    Button(
-        onClick = onClick,
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
-        enabled = enabled && !isLoading,
-        shape = MaterialTheme.shapes.medium, // 16dp rounded corner shape from theme
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
+            .height(54.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (enabled && !isLoading) {
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF34D399), Color(0xFF059669))
+                    )
+                } else {
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF1E293B), Color(0xFF1E293B))
+                    )
+                }
+            )
+            .clickable(enabled = enabled && !isLoading) {
+                onClick()
+            },
+        contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
             CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = Color(0xFF0F172A),
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 2.5.dp
             )
         } else {
             Text(
                 text = text,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                color = if (enabled) Color(0xFF0F172A) else Color(0xFF64748B),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black
             )
         }
     }
@@ -84,11 +102,11 @@ fun SecondaryButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(54.dp),
         enabled = enabled,
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.secondary
+            contentColor = Color(0xFF34D399)
         ),
         border = ButtonDefaults.outlinedButtonBorder.copy(
             width = 1.5.dp
@@ -96,8 +114,8 @@ fun SecondaryButton(
     ) {
         Text(
             text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold
         )
     }
 }
@@ -107,11 +125,13 @@ fun LoadingIndicator(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F172A)),
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary,
+            color = Color(0xFF34D399),
             modifier = Modifier.size(48.dp),
             strokeWidth = 4.dp
         )
@@ -128,9 +148,9 @@ fun PrimaryTopAppBar(
         title = {
             Text(
                 text = title,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color.White
             )
         },
         navigationIcon = {
@@ -139,13 +159,13 @@ fun PrimaryTopAppBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = Color.White
                     )
                 }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = Color(0xFF0F172A)
         )
     )
 }
@@ -164,15 +184,19 @@ fun InputField(
         onValueChange = onValueChange,
         label = { Text(text = label) },
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = RoundedCornerShape(16.dp),
         singleLine = true,
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.15f),
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedBorderColor = Color(0xFF34D399),
+            unfocusedBorderColor = Color.White.copy(alpha = 0.08f),
+            focusedLabelColor = Color(0xFF34D399),
+            unfocusedLabelColor = Color(0xFF94A3B8),
+            focusedContainerColor = Color(0xFF1E293B),
+            unfocusedContainerColor = Color(0xFF1E293B)
         )
     )
 }
@@ -186,13 +210,12 @@ fun SectionCard(
     Card(
         onClick = onClick,
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium, // 16dp rounded corners
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color(0xFF1E293B)
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 4.dp
+            defaultElevation = 0.dp
         ),
         content = content
     )
@@ -207,7 +230,7 @@ fun ScreenContainer(
 ) {
     Scaffold(
         topBar = { PrimaryTopAppBar(title = title, onBackClick = onBackClick) },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color(0xFF0F172A),
         modifier = modifier.fillMaxSize(),
         content = content
     )
