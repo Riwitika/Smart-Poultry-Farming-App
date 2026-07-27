@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SmartPoultry" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Custom attributes can go here if needed. Compose overrides most UI styling. -->
+    </style>
+</resources>
